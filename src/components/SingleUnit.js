@@ -37,7 +37,7 @@ export default function SingleUnit({ colIdx, rowIdx, changeUnitCb, unitId }) {
       unitId={unitId}
     >
       <p>
-        {rowIdx}-{colIdx}
+        {colIdx}-{rowIdx}
       </p>
       {UNITS[unitId].health ? <h3>HP:{UNITS[unitId].health}</h3> : null}
     </StyledSingleUnit>
