@@ -2,19 +2,12 @@ import React, { useState, useEffect } from "react";
 import * as styles from "./Styles/AppStyles";
 import ProgressBar from "./components/ProgressBar";
 import SingleUnit from "./components/SingleUnit";
+import { UNITS } from "./UnitValues";
 
 const ROWS = 5;
 const COLS = 6;
-const UNITS = {
-  0: { name: "Space", health: 0, damage: 0, cost: 0 },
-  1: { name: "Sand Bags", health: 4, damage: 0, cost: 2 },
-  2: { name: "Soldier", health: 1, damage: 2, cost: 3 },
-  3: { name: "Turret", health: 2, damage: 6, cost: 5 },
-  4: { name: "Tank", health: 5, damage: 4, cost: 8 },
-  5: { name: "Heli", health: 2, damage: 6, cost: 10 },
-};
 
-const player = { health: 30, gold: 50 };
+const player = { health: 30, gold: 25 };
 const computer = { health: 30, gold: 25 };
 
 function App() {
@@ -35,24 +28,88 @@ function App() {
     [0, 0, 0, 0, 0],
   ]);
 
-  const [playerMatrixElements, setPlayerMatrixElements] = useState([]);
   const [selectedUnit, setSelectedUnit] = useState(0);
   const [roundStarted, setRoundStarted] = useState(false);
   const [computersTurn, setComputersTurn] = useState(false);
+  const [playerMatrixElements, setPlayerMatrixElements] = useState([]);
   const [computerMatrixElements, setComputerMatrixElements] = useState([]);
 
-  const makeComputersMoves = () => {
-    const randomNum = (max) => Math.floor(Math.random() * max);
-    console.log(randomNum(6));
+  const randomIntExclusiveMax = (min = 0, max) =>
+    Math.floor(Math.random() * (max - min) + min);
 
-    createElementsFromMatrix("computer");
-    // select from [1/2][random]
+  const choseComputersUnits = () => {
+    let goldCount = computer.gold;
+    const chosenUnits = [];
+    const unitValueToUnitIdMap = { 2: 1, 3: 2, 5: 3, 8: 4, 10: 5 };
+    const unitValues = Object.keys(unitValueToUnitIdMap).map((val) => +val);
+
+    while (goldCount > 10) {
+      const randomIndex = randomIntExclusiveMax(1, 6);
+      const randomUnit = UNITS[randomIndex];
+      chosenUnits.push(randomIndex);
+      goldCount -= randomUnit.cost;
+    }
+    while (goldCount > 1) {
+      if (unitValues.includes(goldCount)) {
+        chosenUnits.push(unitValueToUnitIdMap[goldCount]);
+        goldCount = 0;
+      } else goldCount -= 1;
+    }
+
+    computer.gold = computer.gold -= chosenUnits.reduce(
+      (acc, cur) => acc + UNITS[cur].cost
+    );
+
+    return chosenUnits;
+  };
+
+  const getEmptySpace = (matrix) => {
+    // store all combinations in array
+    const hash = {};
+    matrix.forEach((row, idx) => {
+      const availableColsInRow = row
+        .map((col, idx) => (col === 0 ? idx : null))
+        .filter((val) => val !== null);
+      if (availableColsInRow.length > 0) {
+        hash[idx] = availableColsInRow;
+      }
+    });
+    const hashKeys = Object.keys(hash);
+    if (hashKeys.length) {
+      console.log(`hash`, hash);
+      const row = hashKeys[randomIntExclusiveMax(0, hashKeys.length)];
+      // console.log(`row`, row);
+      const colIndexInRow = randomIntExclusiveMax(0, hash[row].length);
+      // console.log(`colIndexInRow`, colIndexInRow);
+      const col = hash[row][colIndexInRow];
+      // console.log(`col`, col);
+      return { row: row, col: col, isSpace: true };
+    } else return { row: null, col: null, isSpace: false };
+  };
+
+  const makeComputersMoves = () => {
+    const chosenUnits = choseComputersUnits();
+    let _matrix = [...computerMatrix];
+    for (const unit of chosenUnits) {
+      const { row, col, isSpace } = getEmptySpace(_matrix);
+      if (isSpace) {
+        _matrix[row].splice(col, 1, unit);
+      } else {
+        console.log(`No Space`);
+      }
+    }
+    computer.gold = computer.gold + 25;
+    player.gold = player.gold + 25;
+    setComputersTurn(false);
+
+    setComputerMatrix(_matrix);
   };
 
   useEffect(() => {
     createElementsFromMatrix("player");
+    createElementsFromMatrix("computer");
     if (computersTurn) makeComputersMoves();
-  }, [playerMatrix, selectedUnit, computersTurn]);
+  }, [playerMatrix, selectedUnit, computersTurn, computerMatrix]);
 
   const changeUnitHandler = (x, y) => {
     if (player.gold >= UNITS[selectedUnit].cost) {
@@ -86,9 +143,7 @@ function App() {
     const Elements = [];
     for (let colIdx = COLS - 1; colIdx >= 0; colIdx--) {
       for (let rowIdx = ROWS - 1; rowIdx >= 0; rowIdx--) {
-        console.log(`computerMatrix`, computerMatrix);
         const uid = computerMatrix[colIdx][rowIdx];
-        console.log(`uid`, uid);
         Elements.unshift(
           <SingleUnit
             key={`${colIdx}/${rowIdx}`}
@@ -140,9 +195,6 @@ function App() {
     }
   });
 
-  // console.log(`playerMatrix`, playerMatrix);
-  // console.log("playerMatrixElements", playerMatrixElements);
-  console.log(`selectedUnit`, selectedUnit);
   return (
     <styles.AppWrapper>
       <styles.BoardWrapper>
@@ -170,6 +222,12 @@ function App() {
         <styles.BoardGridBottom>
           {computerMatrixElements}
         </styles.BoardGridBottom>
+        <styles.BottomHudWrapper>
+          <styles.ComputerHud>
+            <p>Health: {computer.health}</p>
+            <p>Gold: {computer.gold}</p>
+          </styles.ComputerHud>
+        </styles.BottomHudWrapper>
       </styles.BoardWrapper>
     </styles.AppWrapper>
   );

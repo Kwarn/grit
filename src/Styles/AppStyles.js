@@ -106,3 +106,28 @@ export const RoundTimer = styled.div`
   display: flex;
   justify-content: center;
 `;
+
+export const BottomHudWrapper = styled.div`
+  width: 100%;
+  height: 100px;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  margin: auto auto 50px auto;
+`;
+
+export const ComputerHud = styled.div`
+  color: white;
+  background-color: black;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width: 300px;
+  height: 100px;
+  h2 {
+    margin: auto;
+  }
+  p {
+    margin: auto;
+  }
+`;

@@ -36,9 +36,9 @@ export default function SingleUnit({ colIdx, rowIdx, changeUnitCb, unitId }) {
       onClick={() => changeUnitCb(colIdx, rowIdx)}
       unitId={unitId}
     >
-      {/*     <p>
-        {colIdx}-{rowIdx}
-      </p> */}
+      <p>
+        {rowIdx}-{colIdx}
+      </p>
       {UNITS[unitId].health ? <h3>HP:{UNITS[unitId].health}</h3> : null}
     </StyledSingleUnit>
   );

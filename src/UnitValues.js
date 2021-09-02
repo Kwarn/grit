@@ -17,7 +17,7 @@ export const UNIT_STYLES = {
 
 export const UNITS = {
   0: { name: "Space", health: 0, damage: 0, cost: 0 },
-  1: { name: "Shield", health: 4, damage: 0, cost: 2 },
+  1: { name: "Sand Bags", health: 4, damage: 0, cost: 2 },
   2: { name: "Soldier", health: 1, damage: 2, cost: 3 },
   3: { name: "Turret", health: 2, damage: 6, cost: 5 },
   4: { name: "Tank", health: 5, damage: 4, cost: 8 },
