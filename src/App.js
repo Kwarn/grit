@@ -81,21 +81,18 @@ function App() {
   const createUnitElements = (target) => {
     const Elements = [];
     let targetMatrix;
-    if (target === "player") {
-      targetMatrix = playerUnitLocationsMatrix;
-    } else if (target === "computer") {
-      targetMatrix = computerUnitLocationsMatrix;
-    }
+    if (target === "player") targetMatrix = playerUnitLocationsMatrix;
+    else if (target === "computer") targetMatrix = computerUnitLocationsMatrix;
+
     for (let rowIdx = 0; rowIdx < ROWS; rowIdx++) {
       for (let colIdx = 0; colIdx < COLS; colIdx++) {
-        const uid = targetMatrix[colIdx][rowIdx];
         Elements.push(
           <SingleUnit
             key={`${colIdx}/${rowIdx}`}
             colIdx={colIdx}
             rowIdx={rowIdx}
             changeUnitCb={() => placePlayerUnitHandler(colIdx, rowIdx)}
-            unitId={uid}
+            unitId={targetMatrix[colIdx][rowIdx]}
           />
         );
       }
@@ -127,7 +124,7 @@ function App() {
 
   /*                          COMPUTER LOGIC                       */
 
-  const mapUnitsToLocations = (locationMatrix) => {
+  const createUnitsToLocationsMap = (locationMatrix) => {
     let _computersUnitsByLocation = {};
     locationMatrix.forEach((colArray, colArrayIdx) => {
       colArray.forEach((unitId, unitIdx) => {
@@ -170,7 +167,6 @@ function App() {
     const totalGoldCost = chosenUnitIds.reduce(
       (acc, cur) => acc + UNITS[cur].cost
     );
-    console.log(`totalGoldCost`, totalGoldCost);
     computer.gold = computer.gold - totalGoldCost;
 
     return chosenUnitIds;
@@ -178,6 +174,7 @@ function App() {
 
   const getEmptySpace = (matrix) => {
     const columnsWithEmptySpaceHashmap = {};
+
     matrix.forEach((columnArray, colArrayIndex) => {
       const availableIndexsInColumnArray = columnArray
         .map((val, valIdx) => (val === 0 ? valIdx : null))
@@ -187,6 +184,7 @@ function App() {
           availableIndexsInColumnArray;
       }
     });
+
     const hashKeys = Object.keys(columnsWithEmptySpaceHashmap);
     if (hashKeys.length) {
       const columnArrayIndex =
@@ -195,8 +193,10 @@ function App() {
         0,
         columnsWithEmptySpaceHashmap[columnArrayIndex].length
       );
+
       const availableIndex =
         columnsWithEmptySpaceHashmap[columnArrayIndex][randomAvailableIndex];
+
       return {
         columnArrayIndex: columnArrayIndex,
         availableIndex: availableIndex,
@@ -219,7 +219,7 @@ function App() {
       }
     }
 
-    mapUnitsToLocations(_locationMatrix);
+    createUnitsToLocationsMap(_locationMatrix);
     computer.gold = computer.gold + 25;
     player.gold = player.gold + 25;
     setComputersTurn(false);
