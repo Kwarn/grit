@@ -1,6 +1,6 @@
 import React from "react";
 import styled from "styled-components";
-import { UNIT_STYLES, UNITS } from "../UnitValues";
+import { UNIT_STYLES, UNITS } from "../unitData";
 
 const StyledSingleUnit = styled.div`
   margin: auto;

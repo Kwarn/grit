@@ -1,15 +1,23 @@
 import React, { useState, useEffect } from "react";
-import { UNITS } from "./UnitValues";
+import { UNITS } from "./unitData";
 import ProgressBar from "./components/ProgressBar";
 import SingleUnit from "./components/SingleUnit";
 import * as styles from "./Styles/AppStyles";
+import HUD from "./components/HUD";
 
 const ROWS = 5;
 const COLS = 6;
 const player = { health: 30, gold: 0 };
 const computer = { health: 30, gold: 25 };
 
-// obj { "01": {unitId} }
+/* 
+
+  TODO:
+    something is off with the computers unit choices 
+    cost of units & gold at the end of turn incorrect
+    seems a minor gold sink has entered the game - maybe not a bad thing depending on balance
+
+*/
 
 function App() {
   const [selectedUnit, setSelectedUnit] = useState(0);
@@ -39,10 +47,10 @@ function App() {
       [0, 0, 0, 0, 0],
     ]);
 
-  console.log(`playersUnitsByLocation`, playersUnitsByLocation);
-  console.log(`computersUnitsByLocation`, computersUnitsByLocation);
-  console.log(`playerUnitLocationsMatrix`, playerUnitLocationsMatrix);
-  console.log(`computerUnitLocationsMatrix`, computerUnitLocationsMatrix);
+  // console.log(`playersUnitsByLocation`, playersUnitsByLocation);
+  // console.log(`computersUnitsByLocation`, computersUnitsByLocation);
+  // console.log(`playerUnitLocationsMatrix`, playerUnitLocationsMatrix);
+  // console.log(`computerUnitLocationsMatrix`, computerUnitLocationsMatrix);
 
   useEffect(() => {
     createElementsFromMatrix();
@@ -54,22 +62,29 @@ function App() {
     computerUnitLocationsMatrix,
   ]);
 
+  /*                          COMBAT LOGIC                         */
+
   const startRoundHandler = () => {
     setRoundStarted(!roundStarted);
   };
 
-  /*                          SHARED                               */
+  const startCombat = () => {
+    // loop through players units by column
+    // check if a unit is in the same column on computers row
+    // if unit is reduce it's health by the players unit's damage
+    // if damage is more than health move to next row
+    // if no units are found damage players health bar
+  };
+
+  /*                          SHARED LOGIC                         */
 
   const createUnitElements = (target) => {
     const Elements = [];
     let targetMatrix;
-    let setTargetMatrix;
     if (target === "player") {
       targetMatrix = playerUnitLocationsMatrix;
-      setTargetMatrix = setPlayerUnitElements;
     } else if (target === "computer") {
       targetMatrix = computerUnitLocationsMatrix;
-      setTargetMatrix = setComputerUnitElements;
     }
     for (let rowIdx = 0; rowIdx < ROWS; rowIdx++) {
       for (let colIdx = 0; colIdx < COLS; colIdx++) {
@@ -88,50 +103,12 @@ function App() {
     return Elements;
   };
 
-  const mapUnitsToLocations = (locationMatrix) => {
-    let _computersUnitsByLocation = {};
-    locationMatrix.forEach((colArray, colArrayIdx) => {
-      colArray.forEach((unitId, unitIdx) => {
-        if (unitId !== 0) {
-          _computersUnitsByLocation[colArrayIdx] = {
-            ..._computersUnitsByLocation[colArrayIdx],
-            [unitIdx]: UNITS[unitId],
-          };
-        }
-      });
-    });
-
-    setComputersUnitsByLocation(_computersUnitsByLocation);
-  };
-
   const createElementsFromMatrix = () => {
     setPlayerUnitElements(createUnitElements("player"));
     setComputerUnitElements(createUnitElements("computer"));
   };
 
-  /*                         PLAYER                                */
-
-  const selectUnitCards = Object.keys(UNITS).map((key) => {
-    if (+key !== 0) {
-      const isUnlocked = player.gold >= UNITS[key].cost;
-      return (
-        <styles.Unit
-          key={`choice ${key}`}
-          isSelected={selectedUnit === key}
-          onClick={() => (isUnlocked ? setSelectedUnit(key) : null)}
-          unitId={key}
-          isUnlocked={isUnlocked}
-        >
-          <div>
-            <p>{UNITS[key].name}</p>
-            <p>HP: {UNITS[key].health}</p>
-            <p>DMG: {UNITS[key].damage}</p>
-            <p>COST: {UNITS[key].cost}</p>
-          </div>
-        </styles.Unit>
-      );
-    }
-  });
+  /*                          PLAYER LOGIC                         */
 
   const placePlayerUnitHandler = (col, row) => {
     if (player.gold >= UNITS[selectedUnit].cost) {
@@ -148,56 +125,78 @@ function App() {
     }
   };
 
-  /*                         COMPUTER                              */
+  /*                          COMPUTER LOGIC                       */
+
+  const mapUnitsToLocations = (locationMatrix) => {
+    let _computersUnitsByLocation = {};
+    locationMatrix.forEach((colArray, colArrayIdx) => {
+      colArray.forEach((unitId, unitIdx) => {
+        if (unitId !== 0) {
+          _computersUnitsByLocation[colArrayIdx] = {
+            ..._computersUnitsByLocation[colArrayIdx],
+            [unitIdx]: UNITS[unitId],
+          };
+        }
+      });
+    });
+
+    setComputersUnitsByLocation(_computersUnitsByLocation);
+  };
 
   const randomIntExclusiveMax = (min = 0, max) =>
     Math.floor(Math.random() * (max - min) + min);
 
-  const choseComputersUnits = () => {
+  const getComputersUnitChoice = () => {
     let goldCount = computer.gold;
-    const chosenUnits = [];
+    const chosenUnitIds = [];
     const unitValueToUnitIdMap = { 2: 1, 3: 2, 5: 3, 8: 4, 10: 5 };
     const unitValues = Object.keys(unitValueToUnitIdMap).map((val) => +val);
 
     while (goldCount > 10) {
       const randomIndex = randomIntExclusiveMax(1, 6);
       const randomUnit = UNITS[randomIndex];
-      chosenUnits.push(randomIndex);
+      chosenUnitIds.push(randomIndex);
       goldCount -= randomUnit.cost;
     }
     while (goldCount > 1) {
       if (unitValues.includes(goldCount)) {
-        chosenUnits.push(unitValueToUnitIdMap[goldCount]);
+        chosenUnitIds.push(unitValueToUnitIdMap[goldCount]);
         goldCount = 0;
-      } else goldCount -= 1;
+      } else {
+        goldCount -= 1;
+      }
     }
 
-    computer.gold = computer.gold -= chosenUnits.reduce(
+    const totalGoldCost = chosenUnitIds.reduce(
       (acc, cur) => acc + UNITS[cur].cost
     );
+    console.log(`totalGoldCost`, totalGoldCost);
+    computer.gold = computer.gold - totalGoldCost;
 
-    return chosenUnits;
+    return chosenUnitIds;
   };
 
   const getEmptySpace = (matrix) => {
-    const hash = {};
+    const columnsWithEmptySpaceHashmap = {};
     matrix.forEach((columnArray, colArrayIndex) => {
       const availableIndexsInColumnArray = columnArray
         .map((val, valIdx) => (val === 0 ? valIdx : null))
         .filter((idx) => idx !== null);
       if (availableIndexsInColumnArray.length) {
-        hash[colArrayIndex] = availableIndexsInColumnArray;
+        columnsWithEmptySpaceHashmap[colArrayIndex] =
+          availableIndexsInColumnArray;
       }
     });
-    const hashKeys = Object.keys(hash);
+    const hashKeys = Object.keys(columnsWithEmptySpaceHashmap);
     if (hashKeys.length) {
       const columnArrayIndex =
         hashKeys[randomIntExclusiveMax(0, hashKeys.length)];
       const randomAvailableIndex = randomIntExclusiveMax(
         0,
-        hash[columnArrayIndex].length
+        columnsWithEmptySpaceHashmap[columnArrayIndex].length
       );
-      const availableIndex = hash[columnArrayIndex][randomAvailableIndex];
+      const availableIndex =
+        columnsWithEmptySpaceHashmap[columnArrayIndex][randomAvailableIndex];
       return {
         columnArrayIndex: columnArrayIndex,
         availableIndex: availableIndex,
@@ -208,7 +207,7 @@ function App() {
   };
 
   const makeComputersMoves = () => {
-    const chosenUnits = choseComputersUnits();
+    const chosenUnits = getComputersUnitChoice();
     let _locationMatrix = [...computerUnitLocationsMatrix];
     for (const unitId of chosenUnits) {
       const { columnArrayIndex, availableIndex, isSpace } =
@@ -226,22 +225,19 @@ function App() {
     setComputersTurn(false);
 
     setComputerUnitLocationsMatrix(_locationMatrix);
-    // setComputersUnitsByLocation(_computersUnitsByLocation);
   };
+
+  /*                           ELEMENTS                             */
 
   return (
     <styles.AppWrapper>
       <styles.BoardWrapper>
-        <styles.TopHudWrapper>
-          <styles.Player1Hud>
-            <p>Health: {player.health}</p>
-            <p>Gold: {player.gold}</p>
-            {/* <button onClick={() => startRoundHandler()}> */}
-            <button onClick={() => makeComputersMoves()}>Start Round</button>
-          </styles.Player1Hud>
-          <styles.UnitContainer>{selectUnitCards}</styles.UnitContainer>
-        </styles.TopHudWrapper>
-        <styles.BoardGridTop>{playerUnitElements}</styles.BoardGridTop>
+        <styles.ComputerHud>
+          <p>Health: {computer.health}</p>
+          <p>Gold: {computer.gold}</p>
+        </styles.ComputerHud>
+
+        <styles.ComputerGrid>{computerUnitElements}</styles.ComputerGrid>
         <styles.RoundTimer>
           <ProgressBar
             shouldStart={roundStarted}
@@ -250,14 +246,19 @@ function App() {
               setComputersTurn(true);
             }}
           />
+          <button onClick={() => startRoundHandler()}>
+            {/* <button onClick={() => makeComputersMoves()}> */}
+            Start Round
+          </button>
         </styles.RoundTimer>
-        <styles.BoardGridBottom>{computerUnitElements}</styles.BoardGridBottom>
-        <styles.BottomHudWrapper>
-          <styles.ComputerHud>
-            <p>Health: {computer.health}</p>
-            <p>Gold: {computer.gold}</p>
-          </styles.ComputerHud>
-        </styles.BottomHudWrapper>
+
+        <styles.PlayerGrid>{playerUnitElements}</styles.PlayerGrid>
+        <HUD
+          health={player.health}
+          gold={player.gold}
+          selectedUnit={selectedUnit}
+          setSelectedUnitCb={(unitId) => setSelectedUnit(unitId)}
+        />
       </styles.BoardWrapper>
     </styles.AppWrapper>
   );

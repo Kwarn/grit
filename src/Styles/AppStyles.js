@@ -1,5 +1,5 @@
 import styled from "styled-components";
-import { UNITS, UNIT_STYLES } from "../UnitValues";
+import { UNITS, UNIT_STYLES } from "../unitData";
 
 export const AppWrapper = styled.div`
   width: 100%;
@@ -17,7 +17,7 @@ export const BoardWrapper = styled.div`
   flex-direction: column;
 `;
 
-export const BoardGridTop = styled.div`
+export const PlayerGrid = styled.div`
   padding: 10px;
   margin: 10px auto auto auto;
   width: 800px;
@@ -29,7 +29,7 @@ export const BoardGridTop = styled.div`
   grid-gap: 10px 10px;
 `;
 
-export const BoardGridBottom = styled.div`
+export const ComputerGrid = styled.div`
   padding: 10px;
   margin: auto auto 10px auto;
   width: 800px;
@@ -39,64 +39,6 @@ export const BoardGridBottom = styled.div`
   grid-template-columns: repeat(6, 1fr);
   grid-template-rows: repeat(5, 1fr);
   grid-gap: 10px 10px;
-`;
-
-export const TopHudWrapper = styled.div`
-  width: 100%;
-  height: 100px;
-  display: flex;
-  flex-direction: row;
-  justify-content: center;
-  margin: auto auto 50px auto;
-`;
-
-export const Player1Hud = styled.div`
-  color: white;
-  background-color: black;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  width: 300px;
-  height: 100px;
-  h2 {
-    margin: auto;
-  }
-  p {
-    margin: auto;
-  }
-`;
-
-export const UnitContainer = styled.div`
-  display: flex;
-  flex-direction: row;
-  background-color: black;
-  width: 500px;
-  height: 100px;
-  h2 {
-  }
-`;
-
-export const Unit = styled.div`
-  position: relative;
-  border: ${(props) =>
-    props.isSelected ? "3px solid green" : "3px solid transparent"};
-  background-image: ${(props) =>
-    props.isUnlocked ? `url(${UNIT_STYLES[props.unitId]})` : "white"};
-  background-size: cover;
-  display: flex;
-  flex-direction: column;
-  margin: 10px;
-  width: 80px;
-  height: 80px;
-  div {
-    position: absolute;
-    bottom: -50px;
-  }
-  p {
-    font-size: 10px;
-    color: white;
-    margin: auto;
-  }
 `;
 
 export const RoundTimer = styled.div`
