@@ -158,9 +158,9 @@ function App() {
     const columnsWithEmptySpaceHashmap = {};
 
     matrix.forEach((columnArray, colArrayIndex) => {
-      const availableIndexsInColumnArray = columnArray
-        .map((unit, unitIdx) => (unit.id === 0 ? unitIdx : null))
-        .filter((idx) => idx !== null);
+      const availableIndexsInColumnArray = columnArray.map((unit, unitIdx) => {
+        if (unit.id === 0) return unitIdx;
+      });
       if (availableIndexsInColumnArray.length) {
         columnsWithEmptySpaceHashmap[colArrayIndex] =
           availableIndexsInColumnArray;
