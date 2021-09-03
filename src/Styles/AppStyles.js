@@ -73,3 +73,7 @@ export const ComputerHud = styled.div`
     margin: auto;
   }
 `;
+
+export const StartCombatButton = styled.button`
+  position: absolute;
+`;

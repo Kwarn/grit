@@ -7,7 +7,7 @@ import HUD from "./components/HUD";
 
 const ROWS = 5;
 const COLS = 6;
-const player = { health: 30, gold: 0 };
+const player = { health: 30, gold: 25 };
 const computer = { health: 30, gold: 25 };
 
 /* 
@@ -52,6 +52,8 @@ function App() {
   // console.log(`playerUnitLocationsMatrix`, playerUnitLocationsMatrix);
   // console.log(`computerUnitLocationsMatrix`, computerUnitLocationsMatrix);
 
+  const createAttackOrderArrays = () => {};
+
   useEffect(() => {
     createElementsFromMatrix();
     if (computersTurn) makeComputersMoves();
@@ -65,10 +67,35 @@ function App() {
   /*                          COMBAT LOGIC                         */
 
   const startRoundHandler = () => {
-    setRoundStarted(!roundStarted);
+    setRoundStarted(true);
+    startCombat();
   };
 
   const startCombat = () => {
+    console.log("COMBAT STARTED");
+
+    const playerUnitColArrayKeys = Object.keys(playersUnitsByLocation);
+    const computerUnitColArrayKeys = Object.keys(computersUnitsByLocation);
+
+    const playerUnitAttackOrder = {};
+    const computerUnitAttackOrder = {};
+    if (playerUnitColArrayKeys) {
+      for (const key of playerUnitColArrayKeys) {
+        playerUnitAttackOrder[key] = Object.keys(playersUnitsByLocation[key]);
+      }
+    }
+    if (computerUnitColArrayKeys) {
+      for (const key of computerUnitColArrayKeys) {
+        computerUnitAttackOrder[key] = Object.keys(
+          computersUnitsByLocation[key]
+        ).reverse();
+      }
+    }
+    console.log(`playerUnitAttackOrder`, playerUnitAttackOrder);
+    console.log(`computer attack order`, computerUnitAttackOrder);
+
+    // create attack order - closest units first
+
     // loop through players units by column
     // check if a unit is in the same column on computers row
     // if unit is reduce it's health by the players unit's damage
@@ -223,7 +250,6 @@ function App() {
     computer.gold = computer.gold + 25;
     player.gold = player.gold + 25;
     setComputersTurn(false);
-
     setComputerUnitLocationsMatrix(_locationMatrix);
   };
 
@@ -232,24 +258,20 @@ function App() {
   return (
     <styles.AppWrapper>
       <styles.BoardWrapper>
-        <styles.ComputerHud>
-          <p>Health: {computer.health}</p>
-          <p>Gold: {computer.gold}</p>
-        </styles.ComputerHud>
-
+        <HUD health={computer.health} gold={computer.gold} />
         <styles.ComputerGrid>{computerUnitElements}</styles.ComputerGrid>
         <styles.RoundTimer>
           <ProgressBar
             shouldStart={roundStarted}
             stopRoundCb={() => {
               setRoundStarted(false);
-              setComputersTurn(true);
+              setComputersTurn(false);
             }}
           />
-          <button onClick={() => startRoundHandler()}>
-            {/* <button onClick={() => makeComputersMoves()}> */}
+          <styles.StartCombatButton onClick={() => startRoundHandler()}>
+            {/* <styles.StartCombatButton onClick={() => makeComputersMoves()}> */}
             Start Round
-          </button>
+          </styles.StartCombatButton>
         </styles.RoundTimer>
 
         <styles.PlayerGrid>{playerUnitElements}</styles.PlayerGrid>

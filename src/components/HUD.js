@@ -3,8 +3,9 @@ import { UNITS, UNIT_STYLES } from "../unitData";
 import styled from "styled-components";
 import * as styles from "../Styles/HudStyles";
 
+const MAX_HP = 30;
+
 export default function HUD({ health, gold, selectedUnit, setSelectedUnitCb }) {
-  console.log(`health / 30 * 100`, (26 / 30) * 100);
   const selectUnitCards = Object.keys(UNITS).map((key) => {
     if (+key !== 0) {
       const isUnlocked = gold >= UNITS[key].cost;
@@ -35,16 +36,20 @@ export default function HUD({ health, gold, selectedUnit, setSelectedUnitCb }) {
   return (
     <styles.HUDWrapper>
       <styles.HUDContainer>
-        <styles.PlayerHealthBar>
+        <styles.HealthBar>
           <h1>{health}</h1>
-          <styles.PlayerHealthBarFill health={health} />
-        </styles.PlayerHealthBar>
-        <styles.SelectableUnitsContainer>
-          {selectUnitCards}
-        </styles.SelectableUnitsContainer>
-        <styles.GoldCount>
-          <h1>{gold}</h1>
-        </styles.GoldCount>
+          <styles.HealthBarFill percent={Math.floor((health / MAX_HP) * 100)} />
+        </styles.HealthBar>
+        {setSelectedUnitCb ? (
+          <>
+            <styles.SelectableUnitsContainer>
+              {selectUnitCards}
+            </styles.SelectableUnitsContainer>
+            <styles.GoldCount>
+              <h1>{gold}</h1>
+            </styles.GoldCount>
+          </>
+        ) : null}
       </styles.HUDContainer>
     </styles.HUDWrapper>
   );

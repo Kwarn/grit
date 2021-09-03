@@ -49,14 +49,13 @@ export const SelectableUnit = styled.div`
   margin: auto;
   width: 100px;
   height: 100px;
-  }
-
   p {
     font-size: 15px;
     color: white;
     margin: auto;
   }
 `;
+
 export const UnitCost = styled.div`
   position: absolute;
   top: 75px;
@@ -156,7 +155,7 @@ export const GoldCount = styled.div`
   }
 `;
 
-export const PlayerHealthBar = styled.div`
+export const HealthBar = styled.div`
   position: relative;
   margin: 30px auto;
   min-width: 800px;
@@ -175,10 +174,10 @@ export const PlayerHealthBar = styled.div`
   }
 `;
 
-export const PlayerHealthBarFill = styled.div`
+export const HealthBarFill = styled.div`
   margin: auto auto auto 0;
   transition: width 2s ease-in-out;
-  width: ${(props) => `${Math.floor((props.health / 30) * 100)}%`};
+  width: ${(props) => `${props.percent}%`};
   min-height: 30px;
   border-radius: 50px;
   background-color: green;
