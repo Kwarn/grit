@@ -26,8 +26,7 @@ function App() {
   const [playerUnitElements, setPlayerUnitElements] = useState([]);
   const [computerUnitElements, setComputerUnitElements] = useState([]);
 
-  const [playersUnitsByLocation, setPlayersUnitsByLocation] = useState({});
-  const [playerUnitLocationsMatrix, setPlayerUnitLocationsMatrix] = useState([
+  const [playerUnitMatrix, setPlayerUnitMatrix] = useState([
     [0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0],
@@ -36,35 +35,37 @@ function App() {
     [0, 0, 0, 0, 0],
   ]);
 
-  const [computersUnitsByLocation, setComputersUnitsByLocation] = useState({});
-  const [computerUnitLocationsMatrix, setComputerUnitLocationsMatrix] =
-    useState([
-      [0, 0, 0, 0, 0],
-      [0, 0, 0, 0, 0],
-      [0, 0, 0, 0, 0],
-      [0, 0, 0, 0, 0],
-      [0, 0, 0, 0, 0],
-      [0, 0, 0, 0, 0],
-    ]);
+  const [computerUnitMatrix, setComputerUnitMatrix] = useState([
+    [0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0],
+  ]);
 
-  // console.log(`playersUnitsByLocation`, playersUnitsByLocation);
-  // console.log(`computersUnitsByLocation`, computersUnitsByLocation);
-  // console.log(`playerUnitLocationsMatrix`, playerUnitLocationsMatrix);
-  // console.log(`computerUnitLocationsMatrix`, computerUnitLocationsMatrix);
+  console.log(`playerUnitMatrix`, playerUnitMatrix);
+  console.log(`computerUnitMatrix`, computerUnitMatrix);
 
-  const createAttackOrderArrays = () => {};
+  /*                       UNIT MATRIX INITS                      */
+
+  if (playerUnitMatrix[0][0] === 0 && computerUnitMatrix[0][0] === 0) {
+    setPlayerUnitMatrix((prev) =>
+      prev.map((col) => col.map((val) => UNITS[val]))
+    );
+    setComputerUnitMatrix((prev) =>
+      prev.map((col) => col.map((val) => UNITS[val]))
+    );
+  }
 
   useEffect(() => {
     createElementsFromMatrix();
     if (computersTurn) makeComputersMoves();
-  }, [
-    playerUnitLocationsMatrix,
-    selectedUnit,
-    computersTurn,
-    computerUnitLocationsMatrix,
-  ]);
+  }, [playerUnitMatrix, selectedUnit, computersTurn, computerUnitMatrix]);
 
   /*                          COMBAT LOGIC                         */
+
+  const createAttackOrderArray = () => {};
 
   const startRoundHandler = () => {
     setRoundStarted(true);
@@ -73,29 +74,7 @@ function App() {
 
   const startCombat = () => {
     console.log("COMBAT STARTED");
-
-    const playerUnitColArrayKeys = Object.keys(playersUnitsByLocation);
-    const computerUnitColArrayKeys = Object.keys(computersUnitsByLocation);
-
-    const playerUnitAttackOrder = {};
-    const computerUnitAttackOrder = {};
-    if (playerUnitColArrayKeys) {
-      for (const key of playerUnitColArrayKeys) {
-        playerUnitAttackOrder[key] = Object.keys(playersUnitsByLocation[key]);
-      }
-    }
-    if (computerUnitColArrayKeys) {
-      for (const key of computerUnitColArrayKeys) {
-        computerUnitAttackOrder[key] = Object.keys(
-          computersUnitsByLocation[key]
-        ).reverse();
-      }
-    }
-    console.log(`playerUnitAttackOrder`, playerUnitAttackOrder);
-    console.log(`computer attack order`, computerUnitAttackOrder);
-
     // create attack order - closest units first
-
     // loop through players units by column
     // check if a unit is in the same column on computers row
     // if unit is reduce it's health by the players unit's damage
@@ -108,8 +87,8 @@ function App() {
   const createUnitElements = (target) => {
     const Elements = [];
     let targetMatrix;
-    if (target === "player") targetMatrix = playerUnitLocationsMatrix;
-    else if (target === "computer") targetMatrix = computerUnitLocationsMatrix;
+    if (target === "player") targetMatrix = playerUnitMatrix;
+    else if (target === "computer") targetMatrix = computerUnitMatrix;
 
     for (let rowIdx = 0; rowIdx < ROWS; rowIdx++) {
       for (let colIdx = 0; colIdx < COLS; colIdx++) {
@@ -119,7 +98,7 @@ function App() {
             colIdx={colIdx}
             rowIdx={rowIdx}
             changeUnitCb={() => placePlayerUnitHandler(colIdx, rowIdx)}
-            unitId={targetMatrix[colIdx][rowIdx]}
+            unitId={targetMatrix[colIdx][rowIdx].id}
           />
         );
       }
@@ -136,36 +115,14 @@ function App() {
 
   const placePlayerUnitHandler = (col, row) => {
     if (player.gold >= UNITS[selectedUnit].cost) {
-      const newMatrix = [...playerUnitLocationsMatrix];
-      newMatrix[col][row] = selectedUnit;
-      setPlayerUnitLocationsMatrix(newMatrix);
-      setPlayersUnitsByLocation((prev) => {
-        return {
-          ...prev,
-          [col]: { ...prev[col], [row]: UNITS[selectedUnit] },
-        };
-      });
+      const newMatrix = [...playerUnitMatrix];
+      newMatrix[col][row] = UNITS[selectedUnit];
+      setPlayerUnitMatrix(newMatrix);
       player.gold = player.gold - UNITS[selectedUnit].cost;
     }
   };
 
   /*                          COMPUTER LOGIC                       */
-
-  const createUnitsToLocationsMap = (locationMatrix) => {
-    let _computersUnitsByLocation = {};
-    locationMatrix.forEach((colArray, colArrayIdx) => {
-      colArray.forEach((unitId, unitIdx) => {
-        if (unitId !== 0) {
-          _computersUnitsByLocation[colArrayIdx] = {
-            ..._computersUnitsByLocation[colArrayIdx],
-            [unitIdx]: UNITS[unitId],
-          };
-        }
-      });
-    });
-
-    setComputersUnitsByLocation(_computersUnitsByLocation);
-  };
 
   const randomIntExclusiveMax = (min = 0, max) =>
     Math.floor(Math.random() * (max - min) + min);
@@ -204,7 +161,7 @@ function App() {
 
     matrix.forEach((columnArray, colArrayIndex) => {
       const availableIndexsInColumnArray = columnArray
-        .map((val, valIdx) => (val === 0 ? valIdx : null))
+        .map((unit, unitIdx) => (unit.id === 0 ? unitIdx : null))
         .filter((idx) => idx !== null);
       if (availableIndexsInColumnArray.length) {
         columnsWithEmptySpaceHashmap[colArrayIndex] =
@@ -235,22 +192,25 @@ function App() {
 
   const makeComputersMoves = () => {
     const chosenUnits = getComputersUnitChoice();
-    let _locationMatrix = [...computerUnitLocationsMatrix];
+    let _computerUnitMatrix = [...computerUnitMatrix];
     for (const unitId of chosenUnits) {
       const { columnArrayIndex, availableIndex, isSpace } =
-        getEmptySpace(_locationMatrix);
+        getEmptySpace(_computerUnitMatrix);
       if (isSpace) {
-        _locationMatrix[columnArrayIndex].splice(availableIndex, 1, unitId);
+        _computerUnitMatrix[columnArrayIndex].splice(
+          availableIndex,
+          1,
+          UNITS[unitId]
+        );
       } else {
         console.log(`No Space`);
       }
     }
 
-    createUnitsToLocationsMap(_locationMatrix);
     computer.gold = computer.gold + 25;
     player.gold = player.gold + 25;
     setComputersTurn(false);
-    setComputerUnitLocationsMatrix(_locationMatrix);
+    setComputerUnitMatrix(_computerUnitMatrix);
   };
 
   /*                           ELEMENTS                             */
