@@ -65,8 +65,6 @@ function App() {
 
   /*                          COMBAT LOGIC                         */
 
-  const createAttackOrderArray = () => {};
-
   const startRoundHandler = () => {
     setRoundStarted(true);
     startCombat();
@@ -74,12 +72,12 @@ function App() {
 
   const startCombat = () => {
     console.log("COMBAT STARTED");
-    // create attack order - closest units first
-    // loop through players units by column
-    // check if a unit is in the same column on computers row
-    // if unit is reduce it's health by the players unit's damage
-    // if damage is more than health move to next row
-    // if no units are found damage players health bar
+    /* 
+    due to the new structure revamp we can now loop forward through playerMatrix & it's sub-arrays
+    while looping forward through computerMatrix and BACKWARDS through sub-arrys
+    this will get us the units in the computersUnitMatrix by distance to the first row
+    essentially reversing the grid to account for playerMatrix 00 === computerMatrix 04
+    */
   };
 
   /*                          SHARED LOGIC                         */
