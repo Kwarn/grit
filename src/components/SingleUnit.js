@@ -28,18 +28,19 @@ const StyledSingleUnit = styled.div`
   }
 `;
 
-export default function SingleUnit({ colIdx, rowIdx, changeUnitCb, unitId }) {
+export default function SingleUnit({ colIdx, rowIdx, changeUnitCb, unit }) {
   return (
     <StyledSingleUnit
       gridCol={colIdx + 1}
       gridRow={rowIdx + 1}
       onClick={() => changeUnitCb(colIdx, rowIdx)}
-      unitId={unitId}
+      unitId={unit.id}
     >
       <p>
         {colIdx}-{rowIdx}
       </p>
-      {UNITS[unitId].health ? <h3>HP:{UNITS[unitId].health}</h3> : null}
+      {unit.damage ? <h3>DMG: {unit.damage}</h3> : null}
+      {unit.health ? <h3>HP: {unit.health}</h3> : null}
     </StyledSingleUnit>
   );
 }
