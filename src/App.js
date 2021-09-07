@@ -7,8 +7,8 @@ import HUD from "./components/HUD";
 
 const ROWS = 5;
 const COLS = 6;
-const player = { health: 30, gold: 25 };
-const computer = { health: 30, gold: 25 };
+const player = { health: 30, gold: 25, unitCount: 1 };
+const computer = { health: 30, gold: 25, unitCount: 1 };
 
 /* 
 
@@ -70,53 +70,90 @@ function App() {
     startCombat();
   };
 
-  const handleAttack = (attackingUnit, defendingUnit) => {
-    if (attackingUnit.damage === defendingUnit.health)
-      return { defendingUnit: null };
-
-    if (attackingUnit.damage > defendingUnit.health)
-      return {
-        defendingUnit: null,
-        overkillDamage: attackingUnit.damage - defendingUnit.health,
-      };
+  const damageUnit = (damage, unit) => {
+    const damagedUnit =
+      damage < unit.health
+        ? {
+            ...unit,
+            health: unit.health - damage,
+          }
+        : null;
 
     return {
-      defendingUnit: {
-        ...defendingUnit,
-        health: defendingUnit.health - attackingUnit.damage,
-      },
+      damagedUnit: damagedUnit,
+      overkillDamage: damage > unit.health ? damage - unit.health : 0,
     };
   };
 
-  const startCombat = () => {
-    const _pm = [...playerUnitMatrix];
-    const _cm = computerUnitMatrix.map((col) => col.reverse());
+  const findAndDamageUnitsInColumn = (unitArray, damage) => {
+    let updatedUnits = [...unitArray];
+    let unitIdx = 0;
+    let dmg = damage;
+    while (dmg && unitIdx < ROWS) {
+      const unit = updatedUnits[unitIdx];
 
-    console.log("COMBAT STARTED");
-
-    for (let i = 0; i < COLS; i++) {
-      for (let j = 0; j < ROWS; j++) {
-        const pUnit = _pm[i][j].id ? _pm[i][j] : null;
-        const cUnit = _cm[i][j].id ? _cm[i][j] : null;
-
-        if (pUnit && cUnit) {
-          const { defendingUnit, overkillDamage } = handleAttack(pUnit, cUnit);
-
-          if (defendingUnit) _cm[i].splice(j, 1, defendingUnit);
-
-          if (overkillDamage) {
-            console.log(`overkillDamage :>>`, overkillDamage);
-            _cm[i].splice(j, 1, UNITS[0]);
-            // handle second Attack
-            // how do we find next unit?
-            // recursion/while loop?
-          }
-        }
+      if (unit.id === 0) {
+        unitIdx += 1;
+        continue;
       }
-    }
-    // for over kill handleAttack({unit.damage = overkilldamage}, defendingUnit)
 
-    setComputerUnitMatrix(_cm.map((col) => col.reverse()));
+      const { damagedUnit, overkillDamage } = damageUnit(dmg, unit);
+
+      if (!damagedUnit) {
+        updatedUnits.splice(unitIdx, 1, UNITS[0]);
+      }
+      if (damagedUnit) {
+        updatedUnits.splice(unitIdx, 1, damagedUnit);
+        break;
+      }
+
+      dmg = overkillDamage;
+    }
+
+    return { updatedUnitsColumn: updatedUnits, excessDamage: dmg };
+  };
+
+  const startCombat = () => {
+    const pUnitMatrix = [...playerUnitMatrix];
+    const cUnitMatrix = computerUnitMatrix.map((col) => col.reverse());
+
+    for (let colIdx = 0; colIdx < COLS; colIdx++) {
+      let playerUnit = null;
+      let computerUnit = null;
+      let rowIdx = 0;
+
+      while (!playerUnit && !computerUnit && rowIdx < ROWS) {
+        playerUnit = pUnitMatrix[colIdx][rowIdx].id
+          ? pUnitMatrix[colIdx][rowIdx]
+          : null;
+        computerUnit = cUnitMatrix[colIdx][rowIdx].id
+          ? cUnitMatrix[colIdx][rowIdx]
+          : null;
+        rowIdx++;
+      }
+
+      if (playerUnit && !computerUnit) {
+        const damage = playerUnit.damage;
+        const { updatedUnitsColumn, excessDamage } = findAndDamageUnitsInColumn(
+          cUnitMatrix[colIdx],
+          damage
+        );
+        cUnitMatrix.splice(colIdx, 1, updatedUnitsColumn);
+        if (excessDamage) computer.health = computer.health - excessDamage;
+      }
+
+      if (computerUnit && !playerUnit) {
+        const { updatedUnitsColumn, excessDamage } = findAndDamageUnitsInColumn(
+          pUnitMatrix[colIdx],
+          computerUnit.damage
+        );
+
+        pUnitMatrix.splice(colIdx, 1, updatedUnitsColumn);
+        if (excessDamage) player.health = player.health - excessDamage;
+      } else continue;
+    }
+    setPlayerUnitMatrix(pUnitMatrix);
+    setComputerUnitMatrix(cUnitMatrix.map((col) => col.reverse()));
   };
 
   /*                          SHARED LOGIC                         */
@@ -234,11 +271,11 @@ function App() {
       const { columnArrayIndex, availableIndex, isSpace } =
         getEmptySpace(_computerUnitMatrix);
       if (isSpace) {
-        _computerUnitMatrix[columnArrayIndex].splice(
-          availableIndex,
-          1,
-          UNITS[unitId]
-        );
+        _computerUnitMatrix[columnArrayIndex].splice(availableIndex, 1, {
+          ...UNITS[unitId],
+          placeInQueue: computer.unitCount,
+        });
+        computer.unitCount = computer.unitCount + 1;
       } else {
         console.log(`No Space`);
       }

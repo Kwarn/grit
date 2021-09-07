@@ -39,6 +39,7 @@ export default function SingleUnit({ colIdx, rowIdx, changeUnitCb, unit }) {
       <p>
         {colIdx}-{rowIdx}
       </p>
+      {unit.placeInQueue ? <h3>QUEUE: {unit.placeInQueue}</h3> : null}
       {unit.damage ? <h3>DMG: {unit.damage}</h3> : null}
       {unit.health ? <h3>HP: {unit.health}</h3> : null}
     </StyledSingleUnit>
