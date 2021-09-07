@@ -44,8 +44,8 @@ function App() {
     [0, 0, 0, 0, 0],
   ]);
 
-  console.log(`playerUnitMatrix`, playerUnitMatrix);
-  console.log(`computerUnitMatrix`, computerUnitMatrix);
+  // console.log(`playerUnitMatrix`, playerUnitMatrix);
+  // console.log(`computerUnitMatrix`, computerUnitMatrix);
 
   /*                       UNIT MATRIX INITS                      */
 
@@ -70,14 +70,53 @@ function App() {
     startCombat();
   };
 
+  const handleAttack = (attackingUnit, defendingUnit) => {
+    if (attackingUnit.damage === defendingUnit.health)
+      return { defendingUnit: null };
+
+    if (attackingUnit.damage > defendingUnit.health)
+      return {
+        defendingUnit: null,
+        overkillDamage: attackingUnit.damage - defendingUnit.health,
+      };
+
+    return {
+      defendingUnit: {
+        ...defendingUnit,
+        health: defendingUnit.health - attackingUnit.damage,
+      },
+    };
+  };
+
   const startCombat = () => {
+    const _pm = [...playerUnitMatrix];
+    const _cm = computerUnitMatrix.map((col) => col.reverse());
+
     console.log("COMBAT STARTED");
-    /* 
-    due to the new structure revamp we can now loop forward through playerMatrix & it's sub-arrays
-    while looping forward through computerMatrix and BACKWARDS through sub-arrys
-    this will get us the units in the computersUnitMatrix by distance to the first row
-    essentially reversing the grid to account for playerMatrix 00 === computerMatrix 04
-    */
+
+    for (let i = 0; i < COLS; i++) {
+      for (let j = 0; j < ROWS; j++) {
+        const pUnit = _pm[i][j].id ? _pm[i][j] : null;
+        const cUnit = _cm[i][j].id ? _cm[i][j] : null;
+
+        if (pUnit && cUnit) {
+          const { defendingUnit, overkillDamage } = handleAttack(pUnit, cUnit);
+
+          if (defendingUnit) _cm[i].splice(j, 1, defendingUnit);
+
+          if (overkillDamage) {
+            console.log(`overkillDamage :>>`, overkillDamage);
+            _cm[i].splice(j, 1, UNITS[0]);
+            // handle second Attack
+            // how do we find next unit?
+            // recursion/while loop?
+          }
+        }
+      }
+    }
+    // for over kill handleAttack({unit.damage = overkilldamage}, defendingUnit)
+
+    setComputerUnitMatrix(_cm.map((col) => col.reverse()));
   };
 
   /*                          SHARED LOGIC                         */
@@ -96,7 +135,7 @@ function App() {
             colIdx={colIdx}
             rowIdx={rowIdx}
             changeUnitCb={() => placePlayerUnitHandler(colIdx, rowIdx)}
-            unitId={targetMatrix[colIdx][rowIdx].id}
+            unit={targetMatrix[colIdx][rowIdx]}
           />
         );
       }
