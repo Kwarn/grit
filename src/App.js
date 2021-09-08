@@ -169,7 +169,7 @@ function App() {
           _playerUnits
         );
         damageToPlayerHealth = excessDamage;
-        _playerUnits.splice(i, 1, updatedUnits);
+        _playerUnits = updatedUnits;
       }
 
       // we damage health incrementally to allow animations later
