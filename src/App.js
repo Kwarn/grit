@@ -22,8 +22,14 @@ const computer = { health: 30, gold: 25 };
       e.g. compare all columns against their opposite column and conclude those battles first
 
 
+      control animations and setIntervals with this
+      useState(Unit attacking: unitIdx, unit defending: unitIdx, damage)
+      <SingleUnit css = if attacking animate, if defending animate, if damaged animate damage marker/>
+
+
     TODO:
       improve unit selection and placement for AI, sandbags closer & helicopters further back
+      seperate logic into different files as it's getting hard to read
     
 
 */
@@ -94,21 +100,27 @@ function App() {
     };
   };
 
-  const findAndDamageUnitsInColumn = (unitArray, damage) => {
+  const damageUnits = (damage, unitArray) => {
+    // unitArray = [{unit},{unit},{unit},{unit},{unit}]
+    // loops through a unit array applying damage to units
+    // carries over unspent damage until either all units are dead with damage left or damage is absorbed
+    // returns the new array of damaged units and the amount of damage not spent
+    // unspent damage is later applied to player/computer health.
+
+    if (!unitArray.filter((unit) => unit.id !== 0).length > 0)
+      return { updatedUnits: unitArray, excessDamage: damage };
+
     let updatedUnits = [...unitArray];
     let unitIdx = 0;
     let dmg = damage;
+
     while (dmg && unitIdx < ROWS) {
       const unit = updatedUnits[unitIdx];
-
       if (unit.id === 0) {
         unitIdx += 1;
         continue;
       }
-
       const { damagedUnit, overkillDamage } = damageUnit(dmg, unit);
-      console.log(`overkillDamage`, overkillDamage);
-
       if (!damagedUnit) {
         updatedUnits.splice(unitIdx, 1, UNITS[0]);
       }
@@ -116,51 +128,72 @@ function App() {
         updatedUnits.splice(unitIdx, 1, damagedUnit);
         break;
       }
-
       dmg = overkillDamage;
     }
 
-    return { updatedUnitsColumn: updatedUnits, excessDamage: dmg };
+    return { updatedUnits: updatedUnits, excessDamage: dmg };
+  };
+
+  const battleUnitArrays = (playerUnits, computerUnits) => {
+    // array = [{unit},{unit},{unit},{unit},{unit}]
+    const _playerUnits = [...playerUnits];
+    const _computerUnits = [...computerUnits];
+
+    /* 
+    
+    This logic is shakey, 
+    due to choosing opposing units at the same time, _cUnit can be dead by the time
+    we use it to follow up attack, we need to re-grab the unit from the damaged updatedArray
+    if it doesnt exist we need to handle that.
+
+    */
+
+    for (let i = 0; i < ROWS; i++) {
+      const pUnit = _playerUnits[i];
+      const cUnit = _computerUnits[i];
+      let damageToPlayerHealth = 0;
+      let damageToComputerHealth = 0;
+      if (pUnit) {
+        const { updatedUnits, excessDamage } = damageUnits(
+          pUnit.damage,
+          _computerUnits
+        );
+        let damageToComputerHealth = excessDamage;
+        _computerUnits.splice(i, 1, updatedUnits);
+      }
+      if (cUnit) {
+        // check if unit survived?
+        const { updatedUnits, excessDamage } = damageUnits(
+          cUnit.damage,
+          _playerUnits
+        );
+        let damageToPlayerHealth = excessDamage;
+        _playerUnits.splice(i, 1, updatedUnits);
+      }
+
+      // we damage health incrementally to allow animations later
+      if (damageToComputerHealth)
+        computer.health = computer.health - damageToComputerHealth;
+      if (damageToPlayerHealth)
+        player.health = player.health - damageToPlayerHealth;
+    }
+    return {
+      updatedPlayerCol: _playerUnits,
+      updatedComputerCol: _computerUnits,
+    };
   };
 
   const startCombat = () => {
     const pUnitMatrix = [...playerUnitMatrix];
     const cUnitMatrix = computerUnitMatrix.map((col) => col.reverse());
 
-    for (let colIdx = 0; colIdx < COLS; colIdx++) {
-      let playerUnit = null;
-      let computerUnit = null;
-      let rowIdx = 0;
-
-      while (!playerUnit && !computerUnit && rowIdx < ROWS) {
-        playerUnit = pUnitMatrix[colIdx][rowIdx].id
-          ? pUnitMatrix[colIdx][rowIdx]
-          : null;
-        computerUnit = cUnitMatrix[colIdx][rowIdx].id
-          ? cUnitMatrix[colIdx][rowIdx]
-          : null;
-        rowIdx++;
-      }
-
-      if (playerUnit && !computerUnit) {
-        const damage = playerUnit.damage;
-        const { updatedUnitsColumn, excessDamage } = findAndDamageUnitsInColumn(
-          cUnitMatrix[colIdx],
-          damage
-        );
-        cUnitMatrix.splice(colIdx, 1, updatedUnitsColumn);
-        if (excessDamage) computer.health = computer.health - excessDamage;
-      }
-
-      if (computerUnit && !playerUnit) {
-        const { updatedUnitsColumn, excessDamage } = findAndDamageUnitsInColumn(
-          pUnitMatrix[colIdx],
-          computerUnit.damage
-        );
-
-        pUnitMatrix.splice(colIdx, 1, updatedUnitsColumn);
-        if (excessDamage) player.health = player.health - excessDamage;
-      } else continue;
+    for (let col = 0; col < COLS; col++) {
+      const { updatedPlayerCol, updatedComputerCol } = battleUnitArrays(
+        pUnitMatrix[col],
+        cUnitMatrix[col]
+      );
+      pUnitMatrix.splice(col, 1, updatedPlayerCol);
+      cUnitMatrix.splice(col, 1, updatedComputerCol);
     }
     setPlayerUnitMatrix(pUnitMatrix);
     setComputerUnitMatrix(cUnitMatrix.map((col) => col.reverse()));
