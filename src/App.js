@@ -12,15 +12,13 @@ const computer = { health: 30, gold: 25 };
 
 /* 
     issues:
+
       something is off with the computers unit choices & gold tally at end of round
-      units behind other units do not attack AKA only leading unit attacks - see thoughts
+      units still attack after being destroyed
       ProgressBar component is trying to update state after it's dismounted
 
       
     thoughts: 
-      try attacking column to column, 
-      e.g. compare all columns against their opposite column and conclude those battles first
-
 
       control animations and setIntervals with this
       useState(Unit attacking: unitIdx, unit defending: unitIdx, damage)
@@ -28,6 +26,7 @@ const computer = { health: 30, gold: 25 };
 
 
     TODO:
+
       improve unit selection and placement for AI, sandbags closer & helicopters further back
       seperate logic into different files as it's getting hard to read
     
@@ -144,7 +143,10 @@ function App() {
     This logic is shakey, 
     due to choosing opposing units at the same time, _cUnit can be dead by the time
     we use it to follow up attack, we need to re-grab the unit from the damaged updatedArray
-    if it doesnt exist we need to handle that.
+    if it doesnt exist we need to handle that.]#
+
+
+    otherwise all combat working as intended.
 
     */
 
@@ -159,7 +161,6 @@ function App() {
           _computerUnits
         );
         damageToComputerHealth = excessDamage;
-        // this is wrong- creating nested units
         _computerUnits = updatedUnits;
       }
       if (cUnit) {
@@ -183,6 +184,17 @@ function App() {
       updatedComputerCol: _computerUnits,
     };
   };
+
+  /* 
+  
+  p: 
+   tank 2
+
+
+  comp:
+    sandbag 0
+
+  */
 
   const startCombat = () => {
     const pUnitMatrix = [...playerUnitMatrix];
