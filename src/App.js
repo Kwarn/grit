@@ -102,7 +102,8 @@ function App() {
   const damageUnits = (damage, unitArray) => {
     // unitArray = [{unit},{unit},{unit},{unit},{unit}]
     // loops through a unit array applying damage to units
-    // carries over unspent damage until either all units are dead with damage left or damage is absorbed
+    // carries over unspent damage until either all units are dead with damage left
+    // or damage is absorbed
     // returns the new array of damaged units and the amount of damage not spent
     // unspent damage is later applied to player/computer health.
 
@@ -120,6 +121,8 @@ function App() {
         continue;
       }
       const { damagedUnit, overkillDamage } = damageUnit(dmg, unit);
+      dmg = overkillDamage;
+
       if (!damagedUnit) {
         updatedUnits.splice(unitIdx, 1, UNITS[0]);
       }
@@ -127,7 +130,6 @@ function App() {
         updatedUnits.splice(unitIdx, 1, damagedUnit);
         break;
       }
-      dmg = overkillDamage;
     }
 
     return { updatedUnits: updatedUnits, excessDamage: dmg };
