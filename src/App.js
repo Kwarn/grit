@@ -60,7 +60,7 @@ function App() {
   ]);
 
   // console.log(`playerUnitMatrix`, playerUnitMatrix);
-  // console.log(`computerUnitMatrix`, computerUnitMatrix);
+  console.log(`computerUnitMatrix`, computerUnitMatrix);
 
   /*                       UNIT MATRIX INITS                      */
 
@@ -136,8 +136,8 @@ function App() {
 
   const battleUnitArrays = (playerUnits, computerUnits) => {
     // array = [{unit},{unit},{unit},{unit},{unit}]
-    const _playerUnits = [...playerUnits];
-    const _computerUnits = [...computerUnits];
+    let _playerUnits = [...playerUnits];
+    let _computerUnits = [...computerUnits];
 
     /* 
     
@@ -158,8 +158,9 @@ function App() {
           pUnit.damage,
           _computerUnits
         );
-        let damageToComputerHealth = excessDamage;
-        _computerUnits.splice(i, 1, updatedUnits);
+        damageToComputerHealth = excessDamage;
+        // this is wrong- creating nested units
+        _computerUnits = updatedUnits;
       }
       if (cUnit) {
         // check if unit survived?
@@ -167,7 +168,7 @@ function App() {
           cUnit.damage,
           _playerUnits
         );
-        let damageToPlayerHealth = excessDamage;
+        damageToPlayerHealth = excessDamage;
         _playerUnits.splice(i, 1, updatedUnits);
       }
 
@@ -273,7 +274,7 @@ function App() {
     return chosenUnitIds;
   };
 
-  const getEmptySpace = (matrix) => {
+  const getRandomEmptySpace = (matrix) => {
     const columnsWithEmptySpaceHashmap = {};
 
     matrix.forEach((columnArray, colArrayIndex) => {
@@ -312,7 +313,7 @@ function App() {
     let _computerUnitMatrix = [...computerUnitMatrix];
     for (const unitId of chosenUnits) {
       const { columnArrayIndex, availableIndex, isSpace } =
-        getEmptySpace(_computerUnitMatrix);
+        getRandomEmptySpace(_computerUnitMatrix);
       if (isSpace) {
         _computerUnitMatrix[columnArrayIndex].splice(availableIndex, 1, {
           ...UNITS[unitId],
