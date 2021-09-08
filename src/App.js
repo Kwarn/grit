@@ -7,15 +7,24 @@ import HUD from "./components/HUD";
 
 const ROWS = 5;
 const COLS = 6;
-const player = { health: 30, gold: 25, unitCount: 1 };
-const computer = { health: 30, gold: 25, unitCount: 1 };
+const player = { health: 30, gold: 25 };
+const computer = { health: 30, gold: 25 };
 
 /* 
+    issues:
+      something is off with the computers unit choices & gold tally at end of round
+      units behind other units do not attack AKA only leading unit attacks - see thoughts
+      ProgressBar component is trying to update state after it's dismounted
 
-  TODO:
-    something is off with the computers unit choices 
-    cost of units & gold at the end of turn incorrect
-    seems a minor gold sink has entered the game - maybe not a bad thing depending on balance
+      
+    thoughts: 
+      try attacking column to column, 
+      e.g. compare all columns against their opposite column and conclude those battles first
+
+
+    TODO:
+      improve unit selection and placement for AI, sandbags closer & helicopters further back
+    
 
 */
 
@@ -98,6 +107,7 @@ function App() {
       }
 
       const { damagedUnit, overkillDamage } = damageUnit(dmg, unit);
+      console.log(`overkillDamage`, overkillDamage);
 
       if (!damagedUnit) {
         updatedUnits.splice(unitIdx, 1, UNITS[0]);

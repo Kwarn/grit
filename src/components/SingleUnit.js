@@ -28,6 +28,34 @@ const StyledSingleUnit = styled.div`
   }
 `;
 
+const StyledUnitHealth = styled.div`
+  color: white;
+  background-color: green;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  p {
+    font-size: 20px;
+    margin: auto;
+    text-align: center;
+  }
+`;
+
+const StyledUnitDamage = styled.div`
+  color: white;
+  background-color: red;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  p {
+    font-size: 20px;
+    margin: auto;
+    text-align: center;
+  }
+`;
+
 export default function SingleUnit({ colIdx, rowIdx, changeUnitCb, unit }) {
   return (
     <StyledSingleUnit
@@ -39,9 +67,16 @@ export default function SingleUnit({ colIdx, rowIdx, changeUnitCb, unit }) {
       <p>
         {colIdx}-{rowIdx}
       </p>
-      {unit.placeInQueue ? <h3>QUEUE: {unit.placeInQueue}</h3> : null}
-      {unit.damage ? <h3>DMG: {unit.damage}</h3> : null}
-      {unit.health ? <h3>HP: {unit.health}</h3> : null}
+      {unit.damage ? (
+        <StyledUnitDamage>
+          <p>{unit.damage}</p>
+        </StyledUnitDamage>
+      ) : null}
+      {unit.health ? (
+        <StyledUnitHealth>
+          <p>{unit.health}</p>
+        </StyledUnitHealth>
+      ) : null}
     </StyledSingleUnit>
   );
 }
