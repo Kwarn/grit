@@ -84,6 +84,12 @@ function App() {
     startCombat();
   };
 
+  const damageHealthBar = (damage, target) => {
+    target === "player"
+      ? (player.health -= damage)
+      : (computer.health -= damage);
+  };
+
   const damageUnit = (damage, unit) => {
     const damagedUnit =
       damage < unit.health
@@ -100,13 +106,6 @@ function App() {
   };
 
   const damageUnits = (damage, unitArray) => {
-    // unitArray = [{unit},{unit},{unit},{unit},{unit}]
-    // loops through a unit array applying damage to units
-    // carries over unspent damage until either all units are dead with damage left
-    // or damage is absorbed
-    // returns the new array of damaged units and the amount of damage not spent
-    // unspent damage is later applied to player/computer health.
-
     if (!unitArray.filter((unit) => unit.id !== 0).length > 0)
       return { updatedUnits: unitArray, excessDamage: damage };
 
@@ -136,26 +135,11 @@ function App() {
   };
 
   const battleUnitArrays = (playerUnits, computerUnits) => {
-    // array = [{unit},{unit},{unit},{unit},{unit}]
     let _playerUnits = [...playerUnits];
     let _computerUnits = [...computerUnits];
 
-    /* 
-    
-    This logic is shakey, 
-    due to choosing opposing units at the same time, _cUnit can be dead by the time
-    we use it to follow up attack, we need to re-grab the unit from the damaged updatedArray
-    if it doesnt exist we need to handle that.]#
-
-
-    otherwise all combat working as intended.
-
-    */
-
     for (let i = 0; i < ROWS; i++) {
       const pUnit = _playerUnits[i];
-      const cUnit = _computerUnits[i];
-      let damageToPlayerHealth = 0;
       let damageToComputerHealth = 0;
       if (pUnit) {
         const { updatedUnits, excessDamage } = damageUnits(
@@ -165,8 +149,10 @@ function App() {
         damageToComputerHealth = excessDamage;
         _computerUnits = updatedUnits;
       }
+
+      const cUnit = _computerUnits[i];
+      let damageToPlayerHealth = 0;
       if (cUnit) {
-        // check if unit survived?
         const { updatedUnits, excessDamage } = damageUnits(
           cUnit.damage,
           _playerUnits
@@ -177,26 +163,14 @@ function App() {
 
       // we damage health incrementally to allow animations later
       if (damageToComputerHealth)
-        computer.health = computer.health - damageToComputerHealth;
-      if (damageToPlayerHealth)
-        player.health = player.health - damageToPlayerHealth;
+        damageHealthBar(damageToComputerHealth, "computer");
+      if (damageToPlayerHealth) damageHealthBar(damageToPlayerHealth, "player");
     }
     return {
       updatedPlayerCol: _playerUnits,
       updatedComputerCol: _computerUnits,
     };
   };
-
-  /* 
-  
-  p: 
-   tank 2
-
-
-  comp:
-    sandbag 0
-
-  */
 
   const startCombat = () => {
     const pUnitMatrix = [...playerUnitMatrix];
