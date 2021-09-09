@@ -59,7 +59,7 @@ function App() {
   ]);
 
   // console.log(`playerUnitMatrix`, playerUnitMatrix);
-  console.log(`computerUnitMatrix`, computerUnitMatrix);
+  // console.log(`computerUnitMatrix`, computerUnitMatrix);
 
   /*                       UNIT MATRIX INITS                      */
 
@@ -78,11 +78,6 @@ function App() {
   }, [playerUnitMatrix, selectedUnit, computersTurn, computerUnitMatrix]);
 
   /*                          COMBAT LOGIC                         */
-
-  const startRoundHandler = () => {
-    setRoundStarted(true);
-    startCombat();
-  };
 
   const damageHealthBar = (damage, target) => {
     target === "player"
@@ -188,6 +183,11 @@ function App() {
     setComputerUnitMatrix(cUnitMatrix.map((col) => col.reverse()));
   };
 
+  const startRoundHandler = () => {
+    setRoundStarted(true);
+    startCombat();
+  };
+
   /*                          SHARED LOGIC                         */
 
   const createUnitElements = (target) => {
@@ -230,7 +230,7 @@ function App() {
 
   /*                          COMPUTER LOGIC                       */
 
-  const randomIntExclusiveMax = (min = 0, max) =>
+  const randomIntExclusiveMax = (min, max) =>
     Math.floor(Math.random() * (max - min) + min);
 
   const getComputersUnitChoice = () => {
@@ -335,7 +335,6 @@ function App() {
             }}
           />
           <styles.StartCombatButton onClick={() => startRoundHandler()}>
-            {/* <styles.StartCombatButton onClick={() => makeComputersMoves()}> */}
             Start Round
           </styles.StartCombatButton>
         </styles.RoundTimer>
