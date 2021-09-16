@@ -57,6 +57,9 @@ const StyledUnitDamage = styled.div`
 `;
 
 export default function SingleUnit({ colIdx, rowIdx, changeUnitCb, unit }) {
+  if (unit.isAttacking) {
+    console.log(`unit attacking`, unit.name);
+  }
   return (
     <StyledSingleUnit
       gridCol={colIdx + 1}

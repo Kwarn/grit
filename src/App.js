@@ -5,9 +5,9 @@ import SingleUnit from "./components/SingleUnit";
 import * as styles from "./Styles/AppStyles";
 import HUD from "./components/HUD";
 
-const ROWS = 5;
 const COLS = 6;
-const player = { health: 30, gold: 25 };
+const ROWS = 5;
+// const player = { health: 30, gold: 25 };
 const computer = { health: 30, gold: 25 };
 
 /* 
@@ -24,11 +24,20 @@ const computer = { health: 30, gold: 25 };
       useState(Unit attacking: unitIdx, unit defending: unitIdx, damage)
       <SingleUnit css = if attacking animate, if defending animate, if damaged animate damage marker/>
 
+      at the moment clicking space in computer row places selected unit 
+      in player row in the same column/row (not opposite), undecided if this should be kept.
+
+      to time animations we need to update each unit individually
+
+      We may need 2 setIntervals, one to do attacks & damage and
+      one to stop attacking & remove/apply damage to defending unit
 
     TODO:
 
       improve unit selection and placement for AI, sandbags closer & helicopters further back
       seperate logic into different files as it's getting hard to read
+      lock actions during combat phase
+      
     
 
 */
@@ -39,6 +48,8 @@ function App() {
   const [computersTurn, setComputersTurn] = useState(true);
   const [playerUnitElements, setPlayerUnitElements] = useState([]);
   const [computerUnitElements, setComputerUnitElements] = useState([]);
+  const [player, setPlayer] = useState({ health: 30, gold: 25 });
+  const [computer, setComputer] = useState({ health: 30, gold: 25 });
 
   const [playerUnitMatrix, setPlayerUnitMatrix] = useState([
     [0, 0, 0, 0, 0],
@@ -57,9 +68,6 @@ function App() {
     [0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0],
   ]);
-
-  // console.log(`playerUnitMatrix`, playerUnitMatrix);
-  // console.log(`computerUnitMatrix`, computerUnitMatrix);
 
   /*                       UNIT MATRIX INITS                      */
 
@@ -81,8 +89,8 @@ function App() {
 
   const damageHealthBar = (damage, target) => {
     target === "player"
-      ? (player.health -= damage)
-      : (computer.health -= damage);
+      ? setPlayer((prev) => ({ ...prev, health: prev.health - damage }))
+      : setComputer((prev) => ({ ...prev, health: prev.health - damage }));
   };
 
   const damageUnit = (damage, unit) => {
@@ -100,87 +108,155 @@ function App() {
     };
   };
 
-  const damageUnits = (damage, unitArray) => {
-    if (!unitArray.filter((unit) => unit.id !== 0).length > 0)
-      return { updatedUnits: unitArray, excessDamage: damage };
-
-    let updatedUnits = [...unitArray];
-    let unitIdx = 0;
+  const damageUnits = (
+    attackerIdentifier,
+    defenderIdentifier,
+    attackerIdx,
+    damage,
+    defenderUnitArray
+  ) => {
+    const attackOrder = [];
+    let updatedUnits = [...defenderUnitArray];
+    let defenderIdx = 0;
     let dmg = damage;
 
-    while (dmg && unitIdx < ROWS) {
-      const unit = updatedUnits[unitIdx];
+    while (dmg && defenderIdx < ROWS) {
+      const unit = updatedUnits[defenderIdx];
       if (unit.id === 0) {
-        unitIdx += 1;
+        defenderIdx += 1;
         continue;
       }
+      attackOrder.push({
+        attacker: attackerIdentifier,
+        defender: defenderIdentifier,
+        attackerIdx: attackerIdx,
+        defenderIdx: defenderIdx,
+      });
       const { damagedUnit, overkillDamage } = damageUnit(dmg, unit);
       dmg = overkillDamage;
 
       if (!damagedUnit) {
-        updatedUnits.splice(unitIdx, 1, UNITS[0]);
+        updatedUnits.splice(defenderIdx, 1, UNITS[0]);
       }
       if (damagedUnit) {
-        updatedUnits.splice(unitIdx, 1, damagedUnit);
+        updatedUnits.splice(defenderIdx, 1, damagedUnit);
         break;
       }
     }
 
-    return { updatedUnits: updatedUnits, excessDamage: dmg };
+    if (dmg) {
+      attackOrder.push({
+        damageToHealth: dmg,
+        defenderIdentifier: defenderIdentifier,
+        attackerIdentifier: attackerIdentifier,
+        attackerIdx: attackerIdx,
+      });
+    }
+    return {
+      updatedUnits: updatedUnits,
+      attackOrder: attackOrder,
+    };
   };
 
   const battleUnitArrays = (playerUnits, computerUnits) => {
     let _playerUnits = [...playerUnits];
     let _computerUnits = [...computerUnits];
+    const atkOrder = [];
 
     for (let i = 0; i < ROWS; i++) {
       const pUnit = _playerUnits[i];
-      let damageToComputerHealth = 0;
-      if (pUnit) {
-        const { updatedUnits, excessDamage } = damageUnits(
+      if (pUnit.id !== 0) {
+        const { updatedUnits, attackOrder } = damageUnits(
+          "player",
+          "computer",
+          i,
           pUnit.damage,
           _computerUnits
         );
-        damageToComputerHealth = excessDamage;
+        atkOrder.push(...attackOrder);
         _computerUnits = updatedUnits;
       }
 
       const cUnit = _computerUnits[i];
-      let damageToPlayerHealth = 0;
-      if (cUnit) {
-        const { updatedUnits, excessDamage } = damageUnits(
+      if (cUnit.id !== 0) {
+        const { updatedUnits, attackOrder } = damageUnits(
+          "computer",
+          "player",
+          i,
           cUnit.damage,
           _playerUnits
         );
-        damageToPlayerHealth = excessDamage;
+        atkOrder.push(...attackOrder);
         _playerUnits = updatedUnits;
       }
-
-      // we damage health incrementally to allow animations later
-      if (damageToComputerHealth)
-        damageHealthBar(damageToComputerHealth, "computer");
-      if (damageToPlayerHealth) damageHealthBar(damageToPlayerHealth, "player");
     }
     return {
       updatedPlayerCol: _playerUnits,
       updatedComputerCol: _computerUnits,
+      atkOrder: atkOrder,
     };
   };
 
   const startCombat = () => {
-    const pUnitMatrix = [...playerUnitMatrix];
-    const cUnitMatrix = computerUnitMatrix.map((col) => col.reverse());
+    const updatedPlayerMatrix = [...playerUnitMatrix];
+    const updatedComputerMatrix = computerUnitMatrix.map((col) =>
+      col.reverse()
+    );
+    const finalAttackOrder = [];
 
     for (let col = 0; col < COLS; col++) {
-      const { updatedPlayerCol, updatedComputerCol } = battleUnitArrays(
-        pUnitMatrix[col],
-        cUnitMatrix[col]
+      const { updatedPlayerCol, updatedComputerCol, atkOrder } =
+        battleUnitArrays(updatedPlayerMatrix[col], updatedComputerMatrix[col]);
+      updatedPlayerMatrix.splice(col, 1, updatedPlayerCol);
+      updatedComputerMatrix.splice(col, 1, updatedComputerCol);
+      finalAttackOrder.push(
+        ...atkOrder.map((order) => ({ ...order, col: col }))
       );
-      pUnitMatrix.splice(col, 1, updatedPlayerCol);
-      cUnitMatrix.splice(col, 1, updatedComputerCol);
     }
-    setPlayerUnitMatrix(pUnitMatrix);
-    setComputerUnitMatrix(cUnitMatrix.map((col) => col.reverse()));
+
+    let index = 0;
+    const incrementalMatrixUpdate = () => {
+      if (index === finalAttackOrder.length) {
+        return clearInterval(attackQueue);
+      }
+      const {
+        attackerIdentifier,
+        defenderIdentifier,
+        attackerIdx,
+        defenderIdx,
+        col,
+        damageToHealth,
+        healthBarTarget,
+      } = finalAttackOrder[index];
+
+      let attackingMatrix = [];
+      let defendingMatrix = [];
+      let setAttackingMatrix = null;
+      let setDefendingMatrix = null;
+
+      if (attackerIdentifier === "player") {
+        attackingMatrix = playerUnitMatrix;
+        setAttackingMatrix = setPlayerUnitMatrix;
+      } else {
+        attackingMatrix = computerUnitMatrix;
+        setAttackingMatrix = setComputerUnitMatrix;
+      }
+      // Fix this: reversing is switching units around
+      setAttackingMatrix((prev) => {
+        const newMatrix = prev.map((col) => col.reverse());
+        newMatrix[col][attackerIdx].isAttacking = true;
+        return newMatrix.map((col) => col.reverse());
+      });
+
+      if (damageToHealth) {
+        damageHealthBar(damageToHealth, defenderIdentifier);
+        index += 1;
+        return;
+      }
+      index += 1;
+    };
+
+    const attackQueue = setInterval(() => incrementalMatrixUpdate(), [500]);
   };
 
   const startRoundHandler = () => {
@@ -224,7 +300,10 @@ function App() {
       const newMatrix = [...playerUnitMatrix];
       newMatrix[col][row] = UNITS[selectedUnit];
       setPlayerUnitMatrix(newMatrix);
-      player.gold = player.gold - UNITS[selectedUnit].cost;
+      setPlayer((prev) => ({
+        ...prev,
+        gold: prev.gold - UNITS[selectedUnit].cost,
+      }));
     }
   };
 
@@ -305,9 +384,7 @@ function App() {
       if (isSpace) {
         _computerUnitMatrix[columnArrayIndex].splice(availableIndex, 1, {
           ...UNITS[unitId],
-          placeInQueue: computer.unitCount,
         });
-        computer.unitCount = computer.unitCount + 1;
       } else {
         console.log(`No Space`);
       }
