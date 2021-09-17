@@ -7,8 +7,6 @@ import HUD from "./components/HUD";
 
 const COLS = 6;
 const ROWS = 5;
-// const player = { health: 30, gold: 25 };
-const computer = { health: 30, gold: 25 };
 
 /* 
     issues:
@@ -16,18 +14,11 @@ const computer = { health: 30, gold: 25 };
       something is off with the computers unit choices & gold tally at end of round
       units still attack after being destroyed
       ProgressBar component is trying to update state after it's dismounted
-
       
     thoughts: 
 
-      control animations and setIntervals with this
-      useState(Unit attacking: unitIdx, unit defending: unitIdx, damage)
-      <SingleUnit css = if attacking animate, if defending animate, if damaged animate damage marker/>
-
       at the moment clicking space in computer row places selected unit 
       in player row in the same column/row (not opposite), undecided if this should be kept.
-
-      to time animations we need to update each unit individually
 
       We may need 2 setIntervals, one to do attacks & damage and
       one to stop attacking & remove/apply damage to defending unit
@@ -197,6 +188,82 @@ function App() {
     };
   };
 
+  const applyAttacksIncrementally = (
+    updatedPlayerMatrix,
+    updatedComputerMatrix,
+    finalAttackOrder
+  ) => {
+    let index = 0;
+    let prevAttackData = {};
+
+    const {
+      attackerIdentifier,
+      defenderIdentifier,
+      attackerIdx,
+      defenderIdx,
+      col,
+      damageToHealth,
+      healthBarTarget,
+    } = finalAttackOrder[index];
+
+    const incrementalMatrixUpdate = () => {
+      if (index === finalAttackOrder.length) {
+        return clearInterval(attackQueue);
+      }
+
+      if (attackerIdentifier === "player") {
+        setPlayerUnitMatrix((prev) => {
+          const updatedMatrix = [...prev];
+          updatedMatrix[col][attackerIdx].isAttacking = true;
+          if (prevAttackData) {
+            if (prevAttackData.attackerIdentifier === attackerIdentifier) {
+              updatedMatrix[prevAttackData.col][
+                prevAttackData.row
+              ].isAttacking = false;
+            }
+          }
+          return updatedMatrix;
+        });
+        prevAttackData = {
+          attackerIdentifier: attackerIdentifier,
+          col: col,
+          row: attackerIdx,
+        };
+      }
+
+      if (attackerIdentifier === "computer") {
+        // if we cant reverse we can use modulous to adjust the row index
+        // NOTE: A reversed computer matrix is used to calculate row index
+        setComputerUnitMatrix((prev) => {
+          const matrix = prev;
+          matrix[col][attackerIdx].isAttacking = true;
+          if (prevAttackData) {
+            if (prevAttackData.attackerIdentifier === attackerIdentifier) {
+              matrix[prevAttackData.col][
+                prevAttackData.row
+              ].isAttacking = false;
+            }
+          }
+          return matrix;
+        });
+        prevAttackData = {
+          attackerIdentifier: attackerIdentifier,
+          col: col,
+          row: attackerIdx,
+        };
+      }
+
+      if (damageToHealth) {
+        damageHealthBar(damageToHealth, defenderIdentifier);
+        index += 1;
+        return;
+      }
+      index += 1;
+    };
+
+    const attackQueue = setInterval(() => incrementalMatrixUpdate(), [500]);
+  };
+
   const startCombat = () => {
     const updatedPlayerMatrix = [...playerUnitMatrix];
     const updatedComputerMatrix = computerUnitMatrix.map((col) =>
@@ -214,49 +281,11 @@ function App() {
       );
     }
 
-    let index = 0;
-    const incrementalMatrixUpdate = () => {
-      if (index === finalAttackOrder.length) {
-        return clearInterval(attackQueue);
-      }
-      const {
-        attackerIdentifier,
-        defenderIdentifier,
-        attackerIdx,
-        defenderIdx,
-        col,
-        damageToHealth,
-        healthBarTarget,
-      } = finalAttackOrder[index];
-
-      let attackingMatrix = [];
-      let defendingMatrix = [];
-      let setAttackingMatrix = null;
-      let setDefendingMatrix = null;
-
-      if (attackerIdentifier === "player") {
-        attackingMatrix = playerUnitMatrix;
-        setAttackingMatrix = setPlayerUnitMatrix;
-      } else {
-        attackingMatrix = computerUnitMatrix;
-        setAttackingMatrix = setComputerUnitMatrix;
-      }
-      // Fix this: reversing is switching units around
-      setAttackingMatrix((prev) => {
-        const newMatrix = prev.map((col) => col.reverse());
-        newMatrix[col][attackerIdx].isAttacking = true;
-        return newMatrix.map((col) => col.reverse());
-      });
-
-      if (damageToHealth) {
-        damageHealthBar(damageToHealth, defenderIdentifier);
-        index += 1;
-        return;
-      }
-      index += 1;
-    };
-
-    const attackQueue = setInterval(() => incrementalMatrixUpdate(), [500]);
+    applyAttacksIncrementally(
+      updatedPlayerMatrix,
+      updatedComputerMatrix,
+      finalAttackOrder
+    );
   };
 
   const startRoundHandler = () => {
